@@ -1,0 +1,55 @@
+import { Router } from 'express'
+import { asyncHandler } from '../utils/asyncWrapper.js'
+import {
+  addUser,
+  getAllDonor,
+  getAllVolunteer,
+  getUserById,
+  getAllUsDistricts,
+  editUser,
+  deleteUser,
+  editArchiveVolunteer,
+  getAllServiceUser,
+  getAllUsers,
+  getUserwithPagination,
+  archiveUser,
+  unArchiveUser,
+  bulkUploadServiceUser,
+  bulkUploadDonors,
+} from '../controllers/user.js'
+import { upload } from '../core/helpers/multer.js'
+
+const router = Router()
+
+router.post(
+  '/adduser',
+  upload.fields([
+    { name: 'file', maxCount: 1 },
+    { name: 'profileImage', maxCount: 1 },
+  ]),
+  asyncHandler(addUser)
+)
+
+router.get('/getallServiceUser', asyncHandler(getAllServiceUser))
+router.get('/getalluser', asyncHandler(getAllUsers))
+router.get('/getallvolunteer', asyncHandler(getAllVolunteer))
+router.get('/getalldonor', asyncHandler(getAllDonor))
+router.get('/getUserById/:userId', asyncHandler(getUserById))
+router.get('/getAllUsDistricts', asyncHandler(getAllUsDistricts))
+router.patch(
+  '/edituser/:userId',
+  upload.fields([
+    { name: 'profileImage' },
+    { name: 'file' } 
+  ]),
+  asyncHandler(editUser)
+);
+
+router.put('/deleteuser/:userId', asyncHandler(deleteUser))
+router.put('/editArchiveVolunteer/:userId', asyncHandler(editArchiveVolunteer))
+router.put('/archive/:userId', asyncHandler(archiveUser))
+router.get('/allwithpagination', asyncHandler(getUserwithPagination))
+router.put('/unArchive/:userId', asyncHandler(unArchiveUser))
+router.post('/bulkUploadUsers', asyncHandler(bulkUploadServiceUser));
+router.post('/bulkUploadDonors', asyncHandler(bulkUploadDonors));
+export default router
