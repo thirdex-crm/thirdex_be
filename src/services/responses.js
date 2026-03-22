@@ -26,7 +26,7 @@ export const saveResponse = async (formId, body) => {
 
 export const getAllResponse = async (query) => {
 
-    const { page = 1, limit = 10, status, search, type, title, createdAt } = query || {}
+    const { page = 1, limit = 10, status, search, type, title, createdAt, startDate, endDate } = query || {}
     const skip = (page - 1) * limit;
 
     const filter = {
@@ -37,6 +37,22 @@ export const getAllResponse = async (query) => {
             submittedAt: {
                 $gte: new Date(createdAt),
                 $lt: new Date(new Date(createdAt).setDate(new Date(createdAt).getDate() + 1)),
+            },
+        }),
+        ...(startDate && endDate && {
+            submittedAt: {
+                $gte: new Date(startDate),
+                $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+            },
+        }),
+        ...(startDate && !endDate && {
+            submittedAt: {
+                $gte: new Date(startDate),
+            },
+        }),
+        ...(!startDate && endDate && {
+            submittedAt: {
+                $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
             },
         }),
         ...(status !== undefined &&
