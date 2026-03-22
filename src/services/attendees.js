@@ -55,7 +55,7 @@ export const getAllAttendees = async () => {
 
 
 export const getAttendees = async (query) => {
-    const { search, status, page = 1, limit = 10 } = query || {}
+    const { search, status, country, name, uniqueId, page = 1, limit = 10 } = query || {}
     let pageNumber = Number(page)
     let limitNumber = Number(limit)
     if (pageNumber < 1) {
@@ -77,18 +77,34 @@ export const getAttendees = async (query) => {
         $or: searchConditions,
     }
 
-    const attendeesData = await Attendees.find(filter)
+    let attendeesData = await Attendees.find(filter)
         .populate("attendee")
         .populate("session")
-        .skip(skip)
-        .limit(limitNumber)
         .sort({ createdAt: -1 })
         .notDeleted()
 
-    const total = await Attendees.countDocuments(filter)
+    // In-memory filtering on populated attendee data
+    if (country) {
+        attendeesData = attendeesData.filter(a =>
+            a.attendee?.contactInfo?.country?.toLowerCase() === country.toLowerCase()
+        )
+    }
+    if (name) {
+        attendeesData = attendeesData.filter(a =>
+            a.attendee?._id?.toString() === name
+        )
+    }
+    if (uniqueId) {
+        attendeesData = attendeesData.filter(a =>
+            a.attendee?._id?.toString() === uniqueId
+        )
+    }
+
+    const total = attendeesData.length
+    const paginatedData = attendeesData.slice(skip, skip + limitNumber)
 
     return {
-        data: attendeesData,
+        data: paginatedData,
         meta: {
             total,
             page: pageNumber,

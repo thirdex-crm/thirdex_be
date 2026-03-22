@@ -34,7 +34,7 @@ export const getAllList = async () => {
 }
 
 export const getListWithPagination = async (query) => {
-  const { search, name, tag, page, limit , deleted,archive} = query || {}  
+  const { search, name, tag, page, limit, deleted, archive, startDate, endDate } = query || {}
   let pageNumber = Number(page)
   let limitNumber = Number(limit)
   if (pageNumber < 1) {
@@ -62,7 +62,14 @@ export const getListWithPagination = async (query) => {
     ...(name !== undefined && name !== '' && { name: name }),
     ...(tag !== undefined && tag !== '' && { tags: tag }),
     ...(typeof deleted !== 'undefined' ? { isDelete: deleted === 'true' } : { isDelete: false }),
-
+    ...(startDate && endDate && {
+      createdAt: {
+        $gte: new Date(startDate),
+        $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999))
+      }
+    }),
+    ...(startDate && !endDate && { createdAt: { $gte: new Date(startDate) } }),
+    ...(!startDate && endDate && { createdAt: { $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)) } }),
   }
 
   const allMail = await list
