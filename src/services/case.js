@@ -7,6 +7,39 @@ import { generateCustomId } from '../utils/generateCustomId.js'
 import user from '../models/user.js'
 import Services from '../models/services.js'
 import tag from '../models/tags.js'
+import CaseNote from '../models/caseNote.js'
+
+const normalizeCaseStatus = (status) => {
+  if (status === 'close') {
+    return 'closed'
+  }
+
+  if (['pending', 'open', 'closed'].includes(status)) {
+    return status
+  }
+
+  return 'pending'
+}
+
+const parseCaseNoteHours = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return 0
+  }
+
+  const normalizedValue = String(value).trim()
+
+  if (/^\d+(\.\d+)?$/.test(normalizedValue)) {
+    return Number(normalizedValue)
+  }
+
+  if (/^\d{1,2}:\d{2}$/.test(normalizedValue)) {
+    const [hours, minutes] = normalizedValue.split(':').map(Number)
+    return hours + minutes / 60
+  }
+
+  return 0
+}
+
 export const addCase = async (caseData) => {
   const {
     serviceUserId,
@@ -14,6 +47,7 @@ export const addCase = async (caseData) => {
     caseOwner,
     caseOpened,
     caseClosed,
+    status,
     tags,
     description,
     file,
@@ -27,17 +61,8 @@ export const addCase = async (caseData) => {
     );
   }
 
-  const today = new Date();
-  const openedDate = new Date(caseOpened);
-  openedDate.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
-
-  let finalStatus;
-  if (openedDate <= today) {
-    finalStatus = 'open';
-  } else {
-    finalStatus = 'pending';
-  }
+  const finalStatus = normalizeCaseStatus(status)
+  const finalCaseClosed = finalStatus === 'closed' ? caseClosed : null
 
   const uniqueId = await generateCustomId();
 
@@ -46,7 +71,7 @@ export const addCase = async (caseData) => {
     serviceId,
     caseOwner,
     caseOpened,
-    caseClosed,
+    caseClosed: finalCaseClosed,
     tags: Array.isArray(tags) ? tags : tags ? [tags] : [],
     description,
     file,
@@ -109,22 +134,25 @@ export const editCase = async (caseId, caseData) => {
     )
   }
 
+  const finalStatus = normalizeCaseStatus(status)
+  const finalCaseClosed = finalStatus === 'closed' ? caseClosed : null
+
   const updateData = {
     serviceUserId,
     serviceId,
     caseOwner,
     caseOpened,
-    caseClosed,
+    caseClosed: finalCaseClosed,
     tags: Array.isArray(tags) ? tags : tags ? [tags] : [],
     description,
     file,
-    status
+    status: finalStatus
   };
 
   const updatedCase = await Case.findByIdAndUpdate(
     caseId,
     { $set: updateData },
-    { new: true }
+    { new: true, runValidators: true }
   );
 
   if (!updatedCase) {
@@ -301,13 +329,22 @@ export const getCaseById = async (caseId) => {
     },
   ])
 
-  if (!caseData) {
+  if (!caseData || caseData.length === 0) {
     throw new CustomError(
       statusCodes.notFound,
       Message.caseNotFound,
       errorCodes.user_not_found
     )
   }
+
+  const caseNotes = await CaseNote.find({
+    caseId: new mongoose.Types.ObjectId(caseId),
+    isDelete: false,
+    isArchive: false,
+    isCompletlyDelete: false
+  }).select('time')
+
+  caseData[0].totalCaseNoteHours = caseNotes.reduce((total, note) => total + parseCaseNoteHours(note?.time), 0)
 
   return { caseData: caseData[0] }
 }

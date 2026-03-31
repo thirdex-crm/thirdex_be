@@ -3,7 +3,7 @@ import { statusCodes } from '../core/common/constant.js'
 import { regexFilter } from '../core/common/common.js'
 
 export const addCaseNote = async (req, res) => {
-  const { caseId, date, configurationId, subject, time, note, createdBy } =
+  const { caseId, date, configurationId, subject, time, note, createdBy, access } =
     req.body
 
   const filePath = req?.file?.path
@@ -15,6 +15,7 @@ export const addCaseNote = async (req, res) => {
     subject,
     note,
     time,
+    access,
     filePath,
     createdBy,
   }
@@ -46,7 +47,7 @@ export const getAllWithPagination = async (req, res) => {
 }
 
 export const editCaseNote = async (req, res) => {
-  const { caseId, date, configurationId, subject, note, time } = req.body
+  const { caseId, date, configurationId, subject, note, time, access } = req.body
 
   const { caseNoteId } = req.params
   const filePath = req?.file?.path || null
@@ -58,6 +59,7 @@ export const editCaseNote = async (req, res) => {
     subject,
     note,
     time,
+    access,
   }
 
   const updatedNote = await casesNote.editCaseNote(

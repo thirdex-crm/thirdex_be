@@ -15,6 +15,7 @@ export const createCaseNote = async (caseNoteData) => {
     note,
     filePath,
     time,
+    access,
     createdBy,
   } = caseNoteData
 
@@ -34,6 +35,7 @@ export const createCaseNote = async (caseNoteData) => {
     note: note || '',
     file: filePath || '',
     time,
+    access: access === true || access === 'true',
     createdBy,
   });
 

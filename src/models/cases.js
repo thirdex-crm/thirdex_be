@@ -48,7 +48,7 @@ const caseSchema = new mongoose.Schema(
     description: { type: String },
     status: {
       type: String,
-      enum: ['pending', 'close', 'open'],
+      enum: ['pending', 'open', 'closed', 'close'],
       required: true
     }
   },

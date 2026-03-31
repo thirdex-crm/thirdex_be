@@ -8,6 +8,7 @@ export const addCase = async (req, res) => {
     caseOwner,
     caseOpened,
     caseClosed,
+    status,
     tags,
     description,
 
@@ -18,15 +19,16 @@ export const addCase = async (req, res) => {
     caseOwner,
     caseOpened,
     caseClosed,
+    status,
     tags: Array.isArray(tags) ? tags : tags ? [tags] : [],
 
     description,
 
   }
 
-  const filePath = req?.file?.path?.replace(/\\/g, '/')
+  const fileName = req?.file?.filename
 
-  if (filePath) caseData.file = `${filePath}`
+  if (fileName) caseData.file = `uploads/${fileName}`
 
   const addCases = await cases.addCase(caseData)
   res.status(statusCodes?.ok).send(addCases)
@@ -74,7 +76,7 @@ export const editCase = async (req, res) => {
     status,
   } = req.body;
 
-  const filePath = req?.file?.path;
+  const fileName = req?.file?.filename;
 
   const caseData = {
     serviceUserId,
@@ -87,7 +89,7 @@ export const editCase = async (req, res) => {
     status,
   };
 
-  if (filePath) caseData.file = `${filePath}`;
+  if (fileName) caseData.file = `uploads/${fileName}`;
 
   const editCase = await cases.editCase(caseId, caseData)
   res.status(statusCodes?.ok).send(editCase)
