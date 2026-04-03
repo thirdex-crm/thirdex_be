@@ -622,8 +622,6 @@ export const bulkUpload = async (cases) => {
         tags: tags,
         caseOpened: new Date(data.case_open_date),
         caseClosed: new Date(data.case_closed_date),
-        notes: data.notes,
-        file: data.file,
         uniqueId,
         status
       });

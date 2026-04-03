@@ -142,9 +142,9 @@ export const getListDetailById = async (id, page = 1, limit) => {
       isDelete: false,
       isCompletlyDelete: false,
       isActive: true,
-      "otherInfo.tags": { $all: tagIds },
+      ...(tagIds.length > 0 && { "otherInfo.tags": { $all: tagIds } }),
       $or: channelMethodConditions.length > 0 ? channelMethodConditions : [{}],
-      "contactPreferences.contactPurposes": { $elemMatch: { $in: purposeIds } },
+      ...(purposeIds.length > 0 && { "contactPreferences.contactPurposes": { $elemMatch: { $in: purposeIds } } }),
       $and: filterMatchConditions.length > 0 ? filterMatchConditions : [{}]
     };
   } else if (listType == "case") {

@@ -8,7 +8,8 @@ export const addTags = async (req, res) => {
 }
 
 export const getAllTags = async (req, res) => {
-  const alltags = await tagService.getAllTags()
+  const { appliedTo } = req?.query || {};
+  const alltags = await tagService.getAllTags(appliedTo)
   res.status(statusCodes?.ok).send(alltags)
 }
 

@@ -286,9 +286,7 @@ export const bulkUpload = async (services) => {
         name: data?.service_name,
         code: data?.service_code,
         serviceType: serviceType?._id,
-        file: data?.file,
         tags:tags,
-        description: data.notes,
       });
 
       await newService.save();

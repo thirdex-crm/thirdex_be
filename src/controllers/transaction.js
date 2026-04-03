@@ -19,7 +19,7 @@ export const filter = async (req, res) => {
 }
 
 export const editTransaction = async (req, res) => {
-  const { id } = req.params.id
+  const id = req.params.id
 
   const {
     assignedTo,
@@ -67,4 +67,10 @@ export const getTransactionById = async (req, res) => {
     req?.params.id
   )
   res.status(statusCodes?.ok).send(searchData)
+}
+
+export const bulkUploadTransactions = async (req, res) => {
+  const data = req.body;
+  const response = await transactionService.bulkUploadTransactions(data);
+  res.status(statusCodes?.ok).send(response);
 }

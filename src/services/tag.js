@@ -1,4 +1,5 @@
 import tag from '../models/tags.js'
+import tagCategory from '../models/tagCategory.js'
 import { errorCodes, Message, statusCodes } from '../core/common/constant.js'
 import CustomError from '../utils/exception.js'
 import { regexFilter } from '../core/common/common.js'
@@ -15,8 +16,20 @@ export const addTags = async (data) => {
   return { newTag }
 }
 
-export const getAllTags = async () => {
-  const allTags = await tag.find({ isDelete: false, isActive: true, isCompletlyDelete: false }).sort({ createdAt: -1 })
+export const getAllTags = async (appliedTo) => {
+  let allTags;
+  if (appliedTo) {
+    const categories = await tagCategory.find({ appliedTo: appliedTo, isArchive: false, isDelete: false }).select('_id');
+    const categoryIds = categories.map(c => c._id);
+    allTags = await tag.find({
+      isDelete: false,
+      isActive: true,
+      isCompletlyDelete: false,
+      tagCategoryId: { $in: categoryIds }
+    }).sort({ createdAt: -1 });
+  } else {
+    allTags = await tag.find({ isDelete: false, isActive: true, isCompletlyDelete: false }).sort({ createdAt: -1 });
+  }
   if (!allTags) {
     throw new CustomError(
       statusCodes?.notFound,

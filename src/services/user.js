@@ -530,10 +530,7 @@ export const bulkUploadUsers = async (services) => {
           postcode: data?.emergencyContact_postcode,
         },
         otherInfo: {
-          file: data.otherInfo_file,
-          description: data.otherInfo_notes,
           tags: await getTagIdsByNames(data?.otherInfo_tags),
-          restrictAccess: data?.otherInfo_restrict_access == true || data?.otherInfo_restrict_access == "true"
         },
         riskAssessment: {
           riskAssessmentNotes: data?.riskAssessment_notes,
@@ -606,10 +603,7 @@ export const bulkUploadDonor = async (donors) => {
           country: data?.contactInfo_country,
         },
         otherInfo: {
-          file: data.otherInfo_file,
-          description: data.otherInfo_notes,
           tags: await getTagIdsByNames(data?.otherInfo_tags),
-          restrictAccess: data?.otherInfo_restrict_access == true || data?.otherInfo_restrict_access == "true"
         },
         contactPreferences: {
           contactPurposes: await getConfigRiskIndicator(data.contactPreferences_contactPurposes, 'Contact Purpose'),
