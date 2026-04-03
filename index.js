@@ -24,7 +24,7 @@ app.use(corsConfig)
 app.use(passport.initialize())
 
 app.use((req, res, next) => {
-  logger.info(`Incoming request: ${req.method} ${req.originalUrl}`)
+ // logger.info(`Incoming request: ${req.method} ${req.originalUrl}`)
   next()
 })
 

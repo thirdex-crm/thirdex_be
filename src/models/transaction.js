@@ -27,7 +27,7 @@ const TransactionSchema = new mongoose.Schema(
       ref: 'configuration',
     },
     receiptNumber: { type: String },
-    transactionId: { type: String, unique: true },
+    transactionId: { type: String, unique: true, sparse: true },
 
     isArchive: {
       type: Boolean,

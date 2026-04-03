@@ -48,6 +48,46 @@ export const getFormById = async (formId) => {
     return form
 }
 
+export const deleteForm = async (formId) => {
+    const form = await Form.findOneAndDelete({ publicId: formId });
+    if (!form) {
+        throw new CustomError(statusCodes?.notFound, Message?.notFound, errorCodes?.not_found);
+    }
+    return { message: 'Form deleted successfully' };
+};
+
+export const updateForm = async (formId, fields) => {
+    const form = await Form.findOne({ publicId: formId });
+    if (!form) {
+        throw new CustomError(statusCodes?.notFound, Message?.notFound, errorCodes?.not_found);
+    }
+
+    let setTitle = form.title;
+    const formatfields = fields?.formDataUpdated?.map((f, index) => {
+        if (f.type === 'header') {
+            setTitle = f.label;
+        }
+        return {
+            id: index + 1,
+            name: f.name || '',
+            label: f.label || '',
+            type: f.type || '',
+            required: f.required || false,
+            values: f.values,
+            validation: f.validation || ''
+        };
+    });
+
+    form.title = setTitle;
+    if (fields?.formValues?.formType) form.type = fields.formValues.formType;
+    if (fields?.formValues?.description !== undefined) form.description = fields.formValues.description;
+    if (fields?.formValues?.formRecord) form.records = fields.formValues.formRecord;
+    if (formatfields && formatfields.length > 0) form.fields = formatfields;
+
+    await form.save();
+    return form;
+};
+
 export const getAllForms = async (query) => {
 
     const { page = 1, limit = 10, search, type, title, createdAt } = query || {}

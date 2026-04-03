@@ -4,6 +4,17 @@ import CustomError from '../utils/exception.js'
 import { regexFilter } from '../core/common/common.js'
 import mongoose from 'mongoose'
 import UserTimeline from '../models/userTimeline.js'
+import user from '../models/user.js'
+import configuration from '../models/configuration.js'
+
+const getConfigIdByName = async (name, configType) => {
+  if (!name) return null;
+  const config = await configuration.findOne({
+    name: { $regex: `^${name.trim()}$`, $options: 'i' },
+    configurationType: configType
+  }).select('_id');
+  return config?._id || null;
+};
 export const addTransaction = async (data) => {
   const newTransaction = await transaction.create(data)
   if (!newTransaction) {
@@ -242,3 +253,66 @@ export const getTransactionById= async (id) => {
     data: allTransaction,
   }
 }
+
+export const bulkUploadTransactions = async (transactions) => {
+  const results = [];
+  const errors = [];
+
+  for (const data of transactions) {
+    try {
+      const donorId = data.donor_email
+        ? (await user.findOne({ 'contactInfo.email': data.donor_email }).select('_id'))?._id
+        : null;
+
+      const [campaignId, paymentMethodId, currencyId, productIdVal] = await Promise.all([
+        getConfigIdByName(data.campaign, 'Campaign'),
+        getConfigIdByName(data.paymentMethod, 'Payment Method'),
+        getConfigIdByName(data.currency, 'Currency'),
+        getConfigIdByName(data.productId, 'Product'),
+      ]);
+
+      // Validate required config lookups before attempting save
+      const rowErrors = [];
+      if (!campaignId) rowErrors.push(`Campaign "${data.campaign}" not found in Configuration`);
+      if (!paymentMethodId) rowErrors.push(`Payment Method "${data.paymentMethod}" not found in Configuration`);
+      if (!data.amountPaid && data.amountPaid !== 0) rowErrors.push('amountPaid is required');
+
+      if (rowErrors.length > 0) {
+        errors.push({ row: data, error: rowErrors.join('; ') });
+        continue;
+      }
+
+      const txData = {
+        donorId: donorId || undefined,
+        campaign: campaignId,
+        amountPaid: parseFloat(data.amountPaid) || 0,
+        paymentMethod: paymentMethodId,
+        productId: productIdVal || undefined,
+        processingCost: parseFloat(data.processingCost) || 0,
+        currency: currencyId || undefined,
+        receiptNumber: data.receiptNumber || undefined,
+        transactionId: data.transactionId || undefined,
+        amountDue: parseFloat(data.amountDue) || 0,
+        quantity: parseInt(data.quantity) || 0,
+      };
+
+      const newTx = new transaction(txData);
+      await newTx.save();
+
+      if (donorId) {
+        await UserTimeline.findOneAndUpdate(
+          { userId: donorId },
+          { $addToSet: { donationId: newTx._id } },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+      }
+
+      results.push(newTx);
+    } catch (err) {
+      console.error('Failed to save transaction:', data, err.message);
+      errors.push({ row: data, error: err.message });
+    }
+  }
+
+  return { results, errors };
+};
