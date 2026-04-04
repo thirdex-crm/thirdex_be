@@ -2,6 +2,17 @@ import Form from '../models/form.js';
 import { errorCodes, Message, statusCodes } from '../core/common/constant.js'
 import CustomError from '../utils/exception.js'
 
+const getNextSurveyPublicId = async () => {
+    const latestForm = await Form.findOne({ publicId: { $regex: '^surveyform-[0-9]+$' } })
+        .sort({ createdAt: -1, _id: -1 })
+        .select('publicId')
+        .lean();
+
+    const latestNumber = Number(latestForm?.publicId?.replace('surveyform-', ''));
+    const nextNumber = Number.isFinite(latestNumber) ? latestNumber + 1 : 10001;
+    return `surveyform-${nextNumber}`;
+};
+
 export const addForm = async (fields) => {
     let setTitle
     const formatfields = fields?.formDataUpdated
@@ -20,20 +31,35 @@ export const addForm = async (fields) => {
             }
         })
 
-    const formCount = await Form.countDocuments();
-    const publicId = `surveyform-${10000 + formCount + 1}`;
+    // Retry protects against concurrent inserts generating the same publicId.
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+        const publicId = await getNextSurveyPublicId();
 
-    const form = new Form({
-        title: setTitle || '',
-        type: fields?.formValues?.formType || '',
-        description: fields?.formValues?.description || '',
-        fields: formatfields,
-        publicId,
-        records: fields?.formValues?.formRecord || ''
-    });
-    await form.save();
+        try {
+            const form = new Form({
+                title: setTitle || '',
+                type: fields?.formValues?.formType || '',
+                description: fields?.formValues?.description || '',
+                fields: formatfields,
+                publicId,
+                records: fields?.formValues?.formRecord || ''
+            });
 
-    return form
+            await form.save();
+            return form;
+        } catch (error) {
+            if (error?.code === 11000 && error?.keyPattern?.publicId) {
+                continue;
+            }
+            throw error;
+        }
+    }
+
+    throw new CustomError(
+        statusCodes?.badRequest,
+        'Unable to generate a unique form ID. Please try again.',
+        errorCodes?.bad_request
+    );
 }
 
 export const getFormById = async (formId) => {
